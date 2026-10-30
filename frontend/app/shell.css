@@ -352,20 +352,6 @@
 .lib-hero-link:hover {
   text-decoration: underline;
 }
-.lib-hero-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 18px;
-  font-size: 14px;
-  color: rgb(251 246 238 / 0.85);
-}
-.lib-hero-note span {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #e8c58a;
-}
 .lib-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
