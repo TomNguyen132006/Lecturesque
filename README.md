@@ -2,7 +2,10 @@
 
 Turn a lecture into notes and slides where every line cites a lecture timestamp or a web link, then gets checked against that source.
 
-[Live app](https://ai-voice2text.vercel.app) | [Demo video](<DEMO_VIDEO_URL>) | [License (MIT)](LICENSE)
+[Live app](https://ai-voice2text.vercel.app) | [Demo video](https://www.youtube.com/watch?v=LrNe8788cL0) | [License (MIT)](LICENSE)
+
+**The live demo may be paused (AI credits off).** The demo video and the built-in example show a real run.
+To run it yourself, add your own key (see [Setup](#setup)).
 
 ## What it does
 
