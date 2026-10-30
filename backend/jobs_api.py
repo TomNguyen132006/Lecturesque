@@ -101,10 +101,15 @@ limiter = JobLimiter()
 
 
 def _run_limited(job_id: str, name: str) -> None:
+    paused = False
     try:
-        pipeline.run_pipeline(job_id, name)
+        job = pipeline.run_pipeline(job_id, name)
+        paused = job is not None and job.status == "error" and pipeline.KEY_UNAVAILABLE in (job.error or "")
     finally:
-        limiter.finished()
+        if paused:
+            limiter.release()  # no AI call was paid for, so this job does not use up the day's count
+        else:
+            limiter.finished()
 
 
 def _read_limited(file: UploadFile) -> bytes:

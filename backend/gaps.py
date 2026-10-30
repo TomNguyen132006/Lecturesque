@@ -181,6 +181,8 @@ def gaps_for_section(
                 client=client, temperature=0,
             )
         except llm.LLMError as error:
+            if isinstance(error, llm.LLMKeyError):
+                raise  # a missing or rejected key stops the job (AI_KEY_UNAVAILABLE); it is not a per-batch problem
             info["calls"] += error.attempts
             info["cost_is_lower_bound"] = True  # failed attempts may or may not have been billed
             info["flagged"] = "llm_error"
