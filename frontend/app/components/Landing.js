@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import HealthStatus from './HealthStatus'
 import ThemeToggle from './ThemeToggle'
+import { DEMO_VIDEO_URL } from '../lib/paused'
 
 function Tick() {
   return (
@@ -73,6 +74,11 @@ export function HowItWorks() {
           <p className="handwritten">three steps</p>
           <h2 id="how-title">From a lecture to notes with receipts.</h2>
           <p>Every note links to the moment in the lecture or the web page it came from.</p>
+          <div className="how-video">
+            <a href={DEMO_VIDEO_URL} target="_blank" rel="noopener noreferrer" className="story-button story-button-coral story-button-small">
+              Watch the demo video
+            </a>
+          </div>
         </div>
         <div className="how-grid">
           {STEPS.map((step, i) => (
