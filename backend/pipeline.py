@@ -30,6 +30,7 @@ TRANSCRIPT_EXTENSIONS = {".txt", ".srt", ".vtt"}
 ALLOWED_EXTENSIONS = AUDIO_EXTENSIONS | TRANSCRIPT_EXTENSIONS
 STAGES = ["transcribing", "cleaning", "enriching", "writing", "judging", "exporting"]
 ERROR_MAX_CHARS = 300
+KEY_UNAVAILABLE = "AI_KEY_UNAVAILABLE"  # stable job error when the AI key is missing or rejected; the frontend shows "live runs are paused"
 PIPELINE_MODES = ("full", "light")
 LIGHT_SKIPS = ("enriching", "judging")  # light mode: no gap finder, no web search, no judge, no fixer
 
@@ -172,7 +173,8 @@ def run_pipeline(job_id: str, filename: str, storage=None, client=None, engine=N
             run()
         except Exception as error:
             seconds[stage] = round(time.time() - began, 1)
-            job = Job(id=job_id, status="error", stage=stage, error=f"{stage}: {_clip(error) or type(error).__name__}"[:ERROR_MAX_CHARS])
+            reason = KEY_UNAVAILABLE if isinstance(error, llm.LLMKeyError) else _clip(error) or type(error).__name__
+            job = Job(id=job_id, status="error", stage=stage, error=f"{stage}: {reason}"[:ERROR_MAX_CHARS])
             save_job(job, storage)
             _save_report(job_id, storage, job, seconds, started, warnings)
             return job

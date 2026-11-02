@@ -196,10 +196,6 @@ export default function LibraryView({ photo = false }) {
             See the example <span aria-hidden="true">→</span>
           </Link>
         </div>
-        <p className="lib-hero-note">
-          <span aria-hidden="true" />
-          No account needed. Your list stays in this browser.
-        </p>
       </section>
 
       <section className="lib-section" aria-labelledby="examples-heading">

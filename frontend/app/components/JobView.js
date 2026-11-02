@@ -7,8 +7,10 @@ import { findExample } from '../lib/examples'
 import { useAfter } from '../lib/hooks'
 import { jobReducer } from '../lib/jobReducer'
 import { isLocalHost, LOCAL_DIR } from '../lib/localCopy'
+import { isPaused } from '../lib/paused'
 import { updateRecent } from '../lib/recent'
 import ErrorNotice from './ErrorNotice'
+import PausedNotice from './PausedNotice'
 import ProgressView from './ProgressView'
 import ResultsView from './ResultsView'
 
@@ -170,7 +172,8 @@ function LiveJob({ id }) {
   return (
     <div className="flex flex-col gap-6">
       <ProgressView job={job} log={log} waking={waking} />
-      {job.status === 'error' && <ErrorNotice {...describeJobFailure(job)} onRetry={() => router.push('/app/new')} retryLabel="New lecture" />}
+      {isPaused(job) && <PausedNotice />}
+      {job.status === 'error' && !isPaused(job) && <ErrorNotice {...describeJobFailure(job)} onRetry={() => router.push('/app/new')} retryLabel="New lecture" />}
       {lost && job.status !== 'error' && (
         <ErrorNotice
           {...describeError({ kind: 'network' })}

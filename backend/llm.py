@@ -10,6 +10,7 @@ is returned as truncated=True and is NOT retried (a retry would hit the same lim
 Call log: one JSON line per attempt in LLM_LOG_PATH (default backend/.data/logs/calls.jsonl).
 It holds numbers and ids only: no API key, no prompt, no response text.
 """
+import hashlib
 import json
 import os
 import time
@@ -34,6 +35,25 @@ class LLMError(Exception):
         super().__init__(message)
         self.status_code = status_code  # HTTP status, or None for timeout/connection
         self.attempts = attempts
+
+
+class LLMKeyError(LLMError):
+    """The AI key is missing or the provider rejected it (HTTP 401/403). Never retried; the pipeline turns it into the
+    stable job error AI_KEY_UNAVAILABLE. It never holds the key or the provider's error body."""
+
+
+# A fingerprint (not the key) of a key the provider rejected. While the same key is configured, call_model fails at once
+# with no network call, so a deleted key does not cost one rejected request per batch. A new key has another fingerprint.
+_rejected_key: str | None = None
+
+
+def _fingerprint(key: str) -> str:
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
+def _remember_rejected_key() -> None:
+    global _rejected_key
+    _rejected_key = _fingerprint((os.getenv(llm_config.API_KEY_ENV) or "").strip())
 
 
 @dataclass(frozen=True)
@@ -68,7 +88,7 @@ def make_client() -> OpenAI:
     # (otherwise attempts would be hidden from the call log and the count would be wrong).
     key = (os.getenv(llm_config.API_KEY_ENV) or "").strip()
     if not key:  # without this the openai library complains about OPENAI_API_KEY, which this project never uses
-        raise LLMError(f"{llm_config.API_KEY_ENV} is not set (add it to .env or to the server's environment variables)", attempts=0)
+        raise LLMKeyError(f"AI_KEY_UNAVAILABLE: {llm_config.API_KEY_ENV} is not set (add it to .env or to the server's environment variables)", attempts=0)
     return OpenAI(
         base_url=llm_config.BASE_URL,
         api_key=key,
@@ -130,7 +150,11 @@ def call_model(
     **extra,
 ) -> LLMResult:
     cfg = llm_config.get_role(role)  # unknown role fails here, before any call
-    client = client or make_client()
+    from_env = client is None  # an injected client (tests) is not tied to the env key
+    if from_env:
+        client = make_client()
+        if _rejected_key == _fingerprint((os.getenv(llm_config.API_KEY_ENV) or "").strip()):
+            raise LLMKeyError("AI_KEY_UNAVAILABLE: the provider rejected this key earlier", attempts=0)
     total_calls = llm_config.MAX_RETRIES + 1
 
     for attempt in range(1, total_calls + 1):
@@ -159,6 +183,10 @@ def call_model(
                 "prompt_tokens": None, "completion_tokens": None,
                 "reasoning_tokens": None, "est_cost_usd": None,
             })
+            if code in (401, 403):
+                if from_env:
+                    _remember_rejected_key()
+                raise LLMKeyError(f"AI_KEY_UNAVAILABLE: the provider rejected the key (HTTP {code})", status_code=code, attempts=attempt) from None
             if not retryable or attempt == total_calls:
                 raise LLMError(
                     f"{role} call failed after {attempt} attempt(s): {status}",

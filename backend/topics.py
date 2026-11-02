@@ -178,6 +178,8 @@ def _ask_model(segments: list[Segment], *, job_id: str, client, report: dict):
                 client=client, temperature=0,
             )
         except llm.LLMError as error:
+            if isinstance(error, llm.LLMKeyError):
+                raise  # a missing or rejected key stops the job (AI_KEY_UNAVAILABLE); it is not a per-batch problem
             report["calls"] += error.attempts
             report["cost_is_lower_bound"] = True  # failed attempts may or may not have been billed
             return None, "llm_error"
